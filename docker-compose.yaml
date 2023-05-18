@@ -1,16 +1,29 @@
 version: '3'
 
 services:
-  goapp:
+  goapp-core:
     build: ./wallet-core/.
     platform: linux/amd64
-    entrypoint: dockerize -wait tcp://mysql:3306 -timeout 40s ./.docker/start.sh
+    depends_on:
+      - mysql-core
+    entrypoint: dockerize -wait tcp://mysql-core:3306 -timeout 40s ./.docker/start.sh
     volumes:
       - ./wallet-core:/app
     ports:
       - 8080:8080
 
-  mysql:
+  goapp-client:
+    build: ./wallet-client/.
+    platform: linux/amd64
+    depends_on:
+      - mysql-client
+    entrypoint: dockerize -wait tcp://mysql-client:3306 -timeout 40s ./.docker/start.sh
+    volumes:
+      - ./wallet-client:/app
+    ports:
+      - 3003:3003
+
+  mysql-core:
     image: mysql:5.7
     platform: linux/amd64
     environment:
@@ -18,9 +31,21 @@ services:
       MYSQL_DATABASE: wallet
       MYSQL_PASSWORD: root
     ports:
-      - 3306:3306
+      - 13306:3306
     volumes:
       - ./wallet-core/.docker/mysql:/var/lib/mysql
+
+  mysql-client:
+    image: mysql:5.7
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wallet
+      MYSQL_PASSWORD: root
+    ports:
+      - 23306:3306
+    volumes:
+      - ./wallet-client/.docker/mysql:/var/lib/mysql
 
   zookeeper:
     image: "confluentinc/cp-zookeeper:6.1.0"
@@ -71,3 +96,21 @@ services:
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
       CONFLUENT_METRICS_TOPIC_REPLICATION: 1
       PORT: 9021
+
+  init-kafka:
+    image: confluentinc/cp-kafka:6.1.1
+    depends_on:
+      - kafka
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server kafka:29092 --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic transactions --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic balances --replication-factor 1 --partitions 1
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server kafka:29092 --list
+      "

@@ -1,5 +1,5 @@
 migrate:
-	migrate -path=sql/migrations -database "mysql://root:root@tcp(mysql:3306)/wallet" -verbose up
+	migrate -path=sql/migrations -database "mysql://root:root@tcp(mysql-core:3306)/wallet" -verbose up
 
 migratedown:
-	migrate -path=sql/migrations -database "mysql://root:root@tcp(mysql:3306)/wallet" -verbose drop
+	migrate -path=sql/migrations -database "mysql://root:root@tcp(mysql-core:3306)/wallet" -verbose drop
