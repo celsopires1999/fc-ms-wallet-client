@@ -7,7 +7,10 @@ import (
 	"fmt"
 
 	"github.com/celsopires1999/fc-ms-wallet-client/internal/database"
+	getaccount "github.com/celsopires1999/fc-ms-wallet-client/internal/usecase/get_account"
 	replicateaccount "github.com/celsopires1999/fc-ms-wallet-client/internal/usecase/replicate_account"
+	"github.com/celsopires1999/fc-ms-wallet-client/internal/web"
+	server "github.com/celsopires1999/fc-ms-wallet-client/internal/web/webserver"
 	"github.com/celsopires1999/fc-ms-wallet-client/pkg/kafka"
 	"github.com/celsopires1999/fc-ms-wallet-client/pkg/uow"
 	ckafka "github.com/confluentinc/confluent-kafka-go/kafka"
@@ -22,6 +25,24 @@ func main() {
 	}
 	defer db.Close()
 
+	go replicateAccount(db)
+
+	accountDB := database.NewAccountDB(db)
+	getAccountUseCase := getaccount.NewGetAccountUseCase(accountDB)
+	accountHandler := web.NewWebAccountHandler(*getAccountUseCase)
+
+	webserver := server.NewWebServer(":3003")
+	handler := server.Handler{
+		Verb:     "GET",
+		Function: accountHandler.GetAccount,
+	}
+	webserver.AddHandler("/accounts/{id}", handler)
+
+	fmt.Println("Server is running")
+	webserver.Start()
+}
+
+func replicateAccount(db *sql.DB) {
 	ctx := context.Background()
 	uow := uow.NewUow(ctx, db)
 	uow.Register("AccountDB", func(tx *sql.Tx) interface{} {
@@ -51,5 +72,4 @@ func main() {
 			fmt.Println(err)
 		}
 	}
-	fmt.Println("*** GoAppClient Finished ***")
 }
