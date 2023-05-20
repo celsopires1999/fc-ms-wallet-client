@@ -1,29 +1,29 @@
 version: '3'
 
 services:
-  goapp-core:
-    build: ./wallet-core/.
+  goapp-wallet:
+    build: ./wallet/.
     platform: linux/amd64
     depends_on:
-      - mysql-core
-    entrypoint: dockerize -wait tcp://mysql-core:3306 -timeout 40s ./.docker/start.sh
+      - mysql-wallet
+    entrypoint: dockerize -wait tcp://mysql-wallet:3306 -timeout 40s ./.docker/start.sh
     volumes:
-      - ./wallet-core:/app
+      - ./wallet:/app
     ports:
       - 8080:8080
 
-  goapp-client:
-    build: ./wallet-client/.
+  goapp-balance:
+    build: ./balance/.
     platform: linux/amd64
     depends_on:
-      - mysql-client
-    entrypoint: dockerize -wait tcp://mysql-client:3306 -timeout 40s ./.docker/start.sh
+      - mysql-balance
+    entrypoint: dockerize -wait tcp://mysql-balance:3306 -timeout 40s ./.docker/start.sh
     volumes:
-      - ./wallet-client:/app
+      - ./balance:/app
     ports:
       - 3003:3003
 
-  mysql-core:
+  mysql-wallet:
     image: mysql:5.7
     platform: linux/amd64
     environment:
@@ -33,19 +33,19 @@ services:
     ports:
       - 13306:3306
     volumes:
-      - ./wallet-core/.docker/mysql:/var/lib/mysql
+      - ./wallet/.docker/mysql:/var/lib/mysql
 
-  mysql-client:
+  mysql-balance:
     image: mysql:5.7
     platform: linux/amd64
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: wallet
+      MYSQL_DATABASE: balance
       MYSQL_PASSWORD: root
     ports:
       - 23306:3306
     volumes:
-      - ./wallet-client/.docker/mysql:/var/lib/mysql
+      - ./balance/.docker/mysql:/var/lib/mysql
 
   zookeeper:
     image: "confluentinc/cp-zookeeper:6.1.0"

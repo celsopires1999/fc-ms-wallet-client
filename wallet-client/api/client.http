@@ -1,9 +1,0 @@
-### 
-@accountID1 = a3b37c32-0e31-4ed5-a089-a05ec62e885f
-
-GET http://localhost:3003/accounts/{{accountID1}} HTTP/1.1
-
-###
-@accountID2 = a9ab7b77-fcb0-4752-92b7-a3decbc586be
-
-GET http://localhost:3003/accounts/{{accountID2}} HTTP/1.1
